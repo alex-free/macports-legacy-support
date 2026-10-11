@@ -40,8 +40,7 @@
 #if __MPLS_SDK_MAJOR < 1050 \
     && defined(__GNUC__) && defined(__GNUC_MINOR__) && !defined(__clang__) \
     && (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 3))
-/* 10.4 SDK has 3 invocations */
-#pragma options align=power
+/* 10.4 SDK has 2 invocations */
 #pragma options align=power
 #pragma options align=power
 #endif
