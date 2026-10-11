@@ -14,15 +14,36 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-/* pack(1) and align=reset don't mix in some versions of GCC.
- * See: https://gcc.gnu.org/bugzilla/show_bug.cgi?id=50909 */
-#if defined(__GNUC__) && defined(__GNUC_MINOR__) && !defined(__clang__)
-#if __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 5)
-#if __MPLS_SDK_MAJOR < 1050
+/*
+ * pack(1) and align=reset don't mix in some versions of GCC.
+ * See: https://gcc.gnu.org/bugzilla/show_bug.cgi?id=50909
+ *
+ * The basic problem is that since pack(1) is NOP alignment,
+ * GCC 4.3+ ignores it completely, including failing to push an entry
+ * onto the alignment stack.  This causes a "corresponding" align=reset
+ * to malfunction or fail.  This bug has still not been fixed as of GCC 15.
+ *
+ * The workaround is to preload the alignment stack with enough
+ * "NOP but still pushed" alignments to compensate for the failing
+ * pack(1)/reset pairs in the system header.  The number required depends
+ * on the SDK version.
+ *
+ * Although extra dummy pushes are mostly harmless, they may obfuscate
+ * actual overpops in the ensuing code, and since we know the SDK version,
+ * we use the correct number, including none at all in the SDK 10.15+ cases
+ * where pack(1)/reset isn't used.
+ */
+
+/* Do our SDK-related setup */
+#include <_macports_extras/sdkversion.h>
+
+#if __MPLS_SDK_MAJOR < 1050 \
+    && defined(__GNUC__) && defined(__GNUC_MINOR__) && !defined(__clang__) \
+    && (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 3))
+/* 10.4 SDK has two invocations */
+#pragma options align=power
 #pragma options align=power
 #endif
-#endif
-#endif
 
-/* Include the primary system IOKit/scsi/SCSICmds_MODE_Definitions.h */
-#include_next <IOKit/scsi/SCSICmds_MODE_Definitions.h>
+/* Include the primary system IOKit/scsi-commands/SCSICmds_MODE_Definitions.h */
+#include_next <IOKit/scsi-commands/SCSICmds_MODE_Definitions.h>
